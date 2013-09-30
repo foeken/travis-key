@@ -1,8 +1,7 @@
 # Travis Key
 
-Bash script to quickly create an encrypted rsa key to use on Travis. Base on these steps:
+Bash script to quickly create an [encrypted rsa key to use on Travis](http://about.travis-ci.org/docs/user/travis-pro/#How-can-I-encrypt-files-that-include-sensitive-data).
 
-http://about.travis-ci.org/docs/user/travis-pro/#How-can-I-encrypt-files-that-include-sensitive-data
 
 ## Installation
 
