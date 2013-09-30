@@ -1,0 +1,72 @@
+#!/bin/bash
+set -e
+
+usage()
+{
+cat << EOF
+
+Create the secret and encrypt a rsa_key to use on Travis
+
+OPTIONS:
+    -u      github username
+    -o      github org
+    -r      githu repo
+    -k      full path to private rsa keyfile
+
+EOF
+exit 1
+}
+
+while getopts ":u:r:k:o:" option
+do
+  case $option in
+    u) github_user=$OPTARG;;
+    o) github=$OPTARG;;
+    r) repo=$OPTARG;;
+    k) id_rsa=$OPTARG;;
+    \?) usage;exit 2;;
+  esac
+done
+
+if [ -z "$1" ];then
+   usage
+   exit 2
+fi
+
+if [ -z "$github_user" ];then
+  echo "error: missing github user"
+  exit 1
+fi
+
+if [ -z "$github" ];then
+  github=$github_user;
+fi
+
+if [ -z "$repo" ];then
+  echo "error: missing github repo"
+  exit 1
+fi
+
+if [ -z "$id_rsa" ];then
+  echo "error: missing private rsa keyfile"
+  exit 1
+fi
+
+# Get a copy of the public travis key for your repo
+curl --silent -u $github_user https://api.github.com/repos/$github/$repo/keys | grep -B 4 travis-ci\\.com | grep '"key":' | perl -pe 's/^[ ]+"key": //; s/^"//; s/",$//' > /tmp/$github-$repo-id_travis.pub
+# Extract a public key certificate from the travis public key
+ssh-keygen -e -m PKCS8 -f /tmp/$github-$repo-id_travis.pub > /tmp/$github-$repo-id_travis.pub.pem
+
+# Create .travis directory
+mkdir -p .travis
+
+# Generate a password phrase
+password=`cat /dev/urandom | head -c 10000 | openssl sha1`
+# use the password to encrypt the file (in this case our private rsa key)
+openssl aes-256-cbc -k "$password" -in $id_rsa -out .travis/id_rsa.enc -a
+
+# Encrypt the password using the travis public key
+echo "$password" | openssl rsautl -encrypt -pubin -inkey /tmp/$github-$repo-id_travis.pub.pem -out .travis/secret
+
+echo "success: encrypted key and secret created"
+exit 0
