@@ -25,12 +25,12 @@ If successful, it will generate:
   secret
 ```
 
-## Required travis.yml settings to decrypt the key on Travis and use it
+## .travis.yml settings to decrypt the key
 
 Inside of your `.travis.yml`
 
 ```
-# Decrypt our ssh key to allow travis to commit built packages into github
+# Decrypt our ssh key to allow travis to use it
 - secret=`openssl rsautl -decrypt -inkey ~/.ssh/id_rsa -in .travis/secret`
 - openssl aes-256-cbc -k "$secret" -in .travis/id_rsa.enc -d -a -out ~/.ssh/id_rsa
 - ssh-add -D
